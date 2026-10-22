@@ -103,6 +103,12 @@ static Response okSimple() { return okJson(J().boolean("ok", true).done()); }
 // ------------------------------------------------------------------- state
 static CareBridge sys("data");
 static std::map<std::string, std::string> sessions;   // token -> user id
+static std::string webRoot = "web";                  // folder served for the UI
+
+static std::string envOr(const char* name, const std::string& fallback) {
+    const char* v = std::getenv(name);
+    return (v && *v) ? std::string(v) : fallback;
+}
 
 static std::string newToken() {
     static std::mt19937_64 rng(std::random_device{}() ^ static_cast<unsigned long long>(std::time(nullptr)));
@@ -188,6 +194,12 @@ static Response api(const Request& rq) {
     const bool post = rq.method == "POST";
 
     // ---- public
+    if (path == "/api/health") {
+        // The UI uses this to decide between the real C++ backend and the
+        // browser-only demo engine used on static hosting (GitHub Pages).
+        return okJson(J().boolean("ok", true).str("service", "carebridge")
+                              .str("engine", "cpp").boolean("sessions", true).done());
+    }
     if (post && path == "/api/login") {
         User* u = sys.login(P(rq, "id"), rq.form.count("password") ? rq.form.at("password") : "", P(rq, "role"));
         if (!u) return fail("Wrong id, password or role.", 401);
@@ -348,7 +360,7 @@ static std::string mimeFor(const std::string& p) {
 static Response staticFile(std::string path) {
     if (path == "/") path = "/index.html";
     if (path.find("..") != std::string::npos || path.find('\\') != std::string::npos) return fail("Forbidden.", 403);
-    std::ifstream f("web" + path, std::ios::binary);
+    std::ifstream f(webRoot + path, std::ios::binary);
     if (!f) return fail("Not found.", 404);
     std::ostringstream ss;
     ss << f.rdbuf();
@@ -401,6 +413,11 @@ static void sendAll(sock_t fd, const std::string& data) {
 
 int main(int argc, char** argv) {
     int port = argc > 1 ? toInt(argv[1], 8080) : 8080;
+    // Default is loopback (safe for local use). Set CAREBRIDGE_HOST=0.0.0.0
+    // (or pass it as the second argument) to expose the demo on a container,
+    // Codespace or hosting sandbox.
+    std::string host = argc > 2 ? argv[2] : envOr("CAREBRIDGE_HOST", "127.0.0.1");
+    webRoot = envOr("CAREBRIDGE_WEB", "web");
 #ifdef _WIN32
     WSADATA wsa;
     if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) { std::cerr << "WSAStartup failed\n"; return 1; }
@@ -413,13 +430,18 @@ int main(int argc, char** argv) {
     sockaddr_in addr;
     std::memset(&addr, 0, sizeof addr);
     addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);   // local machine only
     addr.sin_port = htons(static_cast<unsigned short>(port));
-    if (srv == BAD_SOCK || bind(srv, reinterpret_cast<sockaddr*>(&addr), sizeof addr) != 0 || listen(srv, 16) != 0) {
-        std::cerr << "Could not listen on port " << port << ". Try another: carebridge_web 9090\n";
+    if (host == "localhost") host = "127.0.0.1";
+    if (inet_pton(AF_INET, host.c_str(), &addr.sin_addr) != 1) {
+        std::cerr << "Invalid host '" << host << "'. Use 127.0.0.1 or 0.0.0.0.\n";
         return 1;
     }
-    std::cout << "CareBridge is running.\n  Open http://localhost:" << port << " in your browser.\n"
+    if (srv == BAD_SOCK || bind(srv, reinterpret_cast<sockaddr*>(&addr), sizeof addr) != 0 || listen(srv, 16) != 0) {
+        std::cerr << "Could not listen on " << host << ':' << port << ". Try another port: carebridge_web 9090\n";
+        return 1;
+    }
+    std::cout << "CareBridge is running on " << host << ':' << port << " (UI folder: " << webRoot << ")\n"
+              << "  Open http://localhost:" << port << " in your browser.\n"
               << "  Demo logins: patient P001 / pat123, doctor D001 / doc123\n  Press Ctrl+C to stop.\n";
 
     std::vector<Client> clients;
