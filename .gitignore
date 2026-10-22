@@ -1,0 +1,15 @@
+# Build output
+carebridge
+carebridge_web
+carebridge_web.exe
+carebridge.exe
+tests
+tests.exe
+
+# Runtime data written by the prototype
+data/
+test_data/
+
+# Editor / OS noise
+.DS_Store
+*.swp
