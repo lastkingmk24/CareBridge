@@ -51,6 +51,18 @@ When the page is served by the real C++ server it uses the server instead
 (detected through `GET /api/health`), so bookings and records are written to
 `data/*.txt` on the machine running the server.
 
+### Two entry points, one interface
+| Served by | Entry file | Assets |
+|-----------|-----------|--------|
+| C++ web server (local / container) | `web/index.html` served at `/` | `web/style.css`, `web/app.js` |
+| GitHub Pages (repository root) | `index.html` served at `/CareBridge/` | `web/style.css`, `web/app.js` |
+
+Pages publishes the repository root, so the root `index.html` exists to boot the
+same interface from `web/`; without it, Jekyll turns `README.md` into the
+homepage. A `.nojekyll` file keeps Jekyll from processing the rest of the repo,
+and the CI workflow deploys `web/` directly as well - whichever deployment is
+live, the site shows the application.
+
 ## Console version and tests
     make              # builds carebridge (console), carebridge_web and tests
     make run          # console menus
@@ -83,9 +95,11 @@ Online compilers (OnlineGDB, etc.) can run only the console version
 | `src/server.cpp` | Web server (select-based HTTP, Winsock/POSIX) and JSON API on top of `CareBridge` |
 | `src/tests.cpp` | 23 automated tests |
 | `web/` | Web interface: `index.html`, `style.css`, `app.js` (no external libraries) |
+| `index.html` | Entry point for GitHub Pages, which publishes the repository root; loads the app from `web/` |
 | `web/demo-api.js` | Browser-only API used by the static GitHub Pages deployment |
 | `run_web.sh`, `run_web.bat` | One-step build and start |
 | `.github/workflows/static.yml` | CI: builds, runs the tests, deploys `web/` to GitHub Pages |
+| `.nojekyll` | Tells GitHub Pages to publish the files as-is (no Jekyll processing) |
 
 ### Server options
 The server listens on `127.0.0.1` by default (safe for local use). To expose the

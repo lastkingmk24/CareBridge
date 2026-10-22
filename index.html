@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="CareBridge - healthcare support for better diagnosis. Book appointments, manage queues and keep a health-record timeline.">
+  <meta name="theme-color" content="#0b2545">
+  <title>CareBridge - Healthcare Support for Better Diagnosis</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230e7c86'/%3E%3Cpath d='M16 8v16M8 16h16' stroke='white' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
+
+  <!--
+    Entry point for GitHub Pages, which publishes this repository root.
+    It boots exactly the same interface as the C++ web server (which serves
+    web/index.html), reusing the files in web/ so there is only one copy of
+    the app. Keeping this file here also stops Jekyll from turning README.md
+    into the site's homepage.
+  -->
+  <link rel="stylesheet" href="web/style.css">
+</head>
+<body>
+  <div id="app">
+    <noscript>
+      <div style="max-width:520px;margin:80px auto;padding:24px;font-family:system-ui,sans-serif">
+        <h1>CareBridge</h1>
+        <p>This interface needs JavaScript. Enable it and reload the page.</p>
+      </div>
+    </noscript>
+  </div>
+  <div id="modal-root"></div>
+  <div id="toasts" role="status" aria-live="polite"></div>
+
+  <script src="web/demo-api.js"></script>
+  <script src="web/app.js"></script>
+</body>
+</html>
